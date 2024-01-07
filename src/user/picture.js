@@ -133,11 +133,11 @@ module.exports = function (User) {
 			picture.path = await image.writeImageDataToTempFile(data.imageData);
 			picture.path = await convertToPNG(picture.path);
 
-			await image.resizeImage({
-				path: picture.path,
-				width: meta.config.profileImageDimension,
-				height: meta.config.profileImageDimension,
-			});
+			// await image.resizeImage({
+			// 	path: picture.path,
+			// 	width: meta.config.profileImageDimension,
+			// 	height: meta.config.profileImageDimension,
+			// });
 
 			const filename = generateProfileImageFilename(data.uid, extension);
 			const uploadedImage = await image.uploadImage(filename, 'profile', picture);
