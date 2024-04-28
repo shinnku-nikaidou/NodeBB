@@ -416,6 +416,7 @@ module.exports = function (Topics) {
 
 		tags = await Topics.filterTags(tags, cid);
 		await Topics.addTags(tags, [tid]);
+		plugins.hooks.fire('action:topic.updateTags', { tags, tid });
 	};
 
 	Topics.deleteTopicTags = async function (tid) {
@@ -620,7 +621,6 @@ module.exports = function (Topics) {
 		const notification = await notifications.create({
 			type: 'new-topic-with-tag',
 			nid: `new_topic:tid:${postData.topic.tid}:uid:${exceptUid}`,
-			subject: bodyShort,
 			bodyShort: bodyShort,
 			bodyLong: postData.content,
 			pid: postData.pid,
