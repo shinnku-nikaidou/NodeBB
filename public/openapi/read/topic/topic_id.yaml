@@ -382,6 +382,10 @@ get:
                     type: number
                   downvote:disabled:
                     type: number
+                  upvoteVisibility:
+                    type: string
+                  downvoteVisibility:
+                    type: string
                   feeds:disableRSS:
                     type: number
                   signatures:hideDuplicates:

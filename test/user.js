@@ -607,7 +607,7 @@ describe('User', () => {
 
 		it('should return an icon text and valid background if username and picture is explicitly requested', async () => {
 			const payload = await User.getUserFields(testUid, ['username', 'picture']);
-			const validBackgrounds = await User.getIconBackgrounds(testUid);
+			const validBackgrounds = await User.getIconBackgrounds();
 			assert.strictEqual(payload['icon:text'], userData.username.slice(0, 1).toUpperCase());
 			assert(payload['icon:bgColor']);
 			assert(validBackgrounds.includes(payload['icon:bgColor']));
@@ -616,7 +616,7 @@ describe('User', () => {
 		it('should return a valid background, even if an invalid background colour is set', async () => {
 			await User.setUserField(testUid, 'icon:bgColor', 'teal');
 			const payload = await User.getUserFields(testUid, ['username', 'picture']);
-			const validBackgrounds = await User.getIconBackgrounds(testUid);
+			const validBackgrounds = await User.getIconBackgrounds();
 
 			assert(payload['icon:bgColor']);
 			assert(validBackgrounds.includes(payload['icon:bgColor']));
@@ -774,6 +774,18 @@ describe('User', () => {
 			await apiUser.changePassword({ uid: uid }, { uid: uid, newPassword: '654321', currentPassword: '123456' });
 			const correct = await User.isPasswordCorrect(uid, '654321', '127.0.0.1');
 			assert(correct);
+		});
+
+		it('should not let user change their password to their current password', async () => {
+			const uid = await User.create({ username: 'changepasswordsame', password: '123456' });
+			await assert.rejects(
+				apiUser.changePassword({ uid: uid }, {
+					uid: uid,
+					newPassword: '123456',
+					currentPassword: '123456',
+				}),
+				{ message: '[[user:change-password-error-same-password]]' },
+			);
 		});
 
 		it('should not let user change another user\'s password', async () => {
@@ -1492,28 +1504,18 @@ describe('User', () => {
 			});
 		});
 
-		it('should return true if user/group exists', (done) => {
-			meta.userOrGroupExists('registered-users', (err, exists) => {
-				assert.ifError(err);
-				assert(exists);
-				done();
-			});
-		});
+		it('should return true/false if user/group exists or not', async () => {
+			assert.strictEqual(await meta.userOrGroupExists('registered-users'), true);
+			assert.strictEqual(await meta.userOrGroupExists('John Smith'), true);
+			assert.strictEqual(await meta.userOrGroupExists('doesnot exist'), false);
+			assert.deepStrictEqual(await meta.userOrGroupExists(['doesnot exist', 'nope not here']), [false, false]);
+			assert.deepStrictEqual(await meta.userOrGroupExists(['doesnot exist', 'John Smith']), [false, true]);
+			assert.deepStrictEqual(await meta.userOrGroupExists(['administrators', 'John Smith']), [true, true]);
 
-		it('should return true if user/group exists', (done) => {
-			meta.userOrGroupExists('John Smith', (err, exists) => {
-				assert.ifError(err);
-				assert(exists);
-				done();
-			});
-		});
-
-		it('should return false if user/group does not exists', (done) => {
-			meta.userOrGroupExists('doesnot exist', (err, exists) => {
-				assert.ifError(err);
-				assert(!exists);
-				done();
-			});
+			await assert.rejects(
+				meta.userOrGroupExists(['', undefined]),
+				{ message: '[[error:invalid-data]]' },
+			);
 		});
 
 		it('should delete user', async () => {
@@ -1683,7 +1685,7 @@ describe('User', () => {
 			await setTimeout(50);
 			await socketUser.setModerationNote({ uid: adminUid }, { uid: testUid, note: '<svg/onload=alert(document.location);//' });
 			const notes = await User.getModerationNotes(testUid, 0, -1);
-			assert.equal(notes[0].note, '&lt;svg&#x2F;onload=alert(document.location);&#x2F;&#x2F;');
+			assert.equal(notes[0].note, '');
 			assert.equal(notes[0].uid, adminUid);
 			assert.equal(notes[1].note, 'this is a test user');
 			assert(notes[0].timestamp);

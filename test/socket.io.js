@@ -15,6 +15,7 @@ const db = require('./mocks/databasemock');
 const user = require('../src/user');
 const groups = require('../src/groups');
 const categories = require('../src/categories');
+const topics = require('../src/topics');
 const helpers = require('./helpers');
 const meta = require('../src/meta');
 const events = require('../src/events');
@@ -45,6 +46,12 @@ describe('socket.io', () => {
 		await user.email.confirmByUid(regularUid);
 
 		cid = data[2].cid;
+		await topics.post({
+			uid: adminUid,
+			cid: cid,
+			title: 'Test Topic',
+			content: 'Test topic content',
+		});
 	});
 
 
@@ -687,7 +694,7 @@ describe('socket.io', () => {
 			await socketUser.reset.send({ uid: 0 }, 'regular@test.com');
 			const [count, eventsData] = await Promise.all([
 				db.sortedSetCount('reset:issueDate', 0, Date.now()),
-				events.getEvents('', 0, 0),
+				events.getEvents({ filter: '', start: 0, stop: 0 }),
 			]);
 			assert.strictEqual(count, 2);
 
@@ -705,7 +712,7 @@ describe('socket.io', () => {
 			);
 			const [count, eventsData] = await Promise.all([
 				db.sortedSetCount('reset:issueDate', 0, Date.now()),
-				events.getEvents('', 0, 0),
+				events.getEvents({ filter: '', start: 0, stop: 0 }),
 			]);
 			assert.strictEqual(count, 2);
 
@@ -740,7 +747,7 @@ describe('socket.io', () => {
 
 	it('should toggle caches', async () => {
 		const caches = {
-			post: require('../src/posts/cache'),
+			post: require('../src/posts/cache').getOrCreate(),
 			object: require('../src/database').objectCache,
 			group: require('../src/groups').cache,
 			local: require('../src/cache'),

@@ -52,13 +52,21 @@ module.exports = function (middleware) {
 					res.set('cache-control', 'private');
 				}
 
-				const buildResult = await plugins.hooks.fire(`filter:${template}.build`, { req: req, res: res, templateData: options });
+				const buildResult = await plugins.hooks.fire(`filter:${template}.build`, {
+					req: req,
+					res: res,
+					templateData: options,
+				});
 				if (res.headersSent) {
 					return;
 				}
 				const templateToRender = buildResult.templateData.templateToRender || template;
 
-				const renderResult = await plugins.hooks.fire('filter:middleware.render', { req: req, res: res, templateData: buildResult.templateData });
+				const renderResult = await plugins.hooks.fire('filter:middleware.render', {
+					req: req,
+					res: res,
+					templateData: buildResult.templateData,
+				});
 				if (res.headersSent) {
 					return;
 				}
@@ -108,7 +116,7 @@ module.exports = function (middleware) {
 			}
 
 			try {
-				await renderMethod(template, { ...res.locals.templateValues, ...options }, fn);
+				await renderMethod(template, options, fn);
 			} catch (err) {
 				next(err);
 			}
@@ -122,7 +130,7 @@ module.exports = function (middleware) {
 			return await user.getUserData(req.uid);
 		}
 		return {
-			uid: 0,
+			uid: req.uid === -1 ? -1 : 0,
 			username: '[[global:guest]]',
 			picture: user.getDefaultAvatar(),
 			'icon:text': '?',
@@ -176,7 +184,7 @@ module.exports = function (middleware) {
 			timeagoCode: languages.userTimeagoCode(res.locals.config.userLang),
 			browserTitle: translator.translate(controllersHelpers.buildTitle(title)),
 			navigation: navigation.get(req.uid),
-			roomIds: db.getSortedSetRevRange(`uid:${req.uid}:chat:rooms`, 0, 0),
+			roomIds: req.uid > 0 ? db.getSortedSetRevRange(`uid:${req.uid}:chat:rooms`, 0, 0) : [],
 		});
 
 		const unreadData = {

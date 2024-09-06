@@ -10,6 +10,7 @@ const meta = require('../meta');
 const plugins = require('../plugins');
 const translator = require('../translator');
 const utils = require('../utils');
+const postCache = require('./cache');
 
 let sanitizeConfig = {
 	allowedTags: sanitize.defaults.allowedTags.concat([
@@ -21,7 +22,7 @@ let sanitizeConfig = {
 		...sanitize.defaults.allowedAttributes,
 		a: ['href', 'name', 'hreflang', 'media', 'rel', 'target', 'type'],
 		img: ['alt', 'height', 'ismap', 'src', 'usemap', 'width', 'srcset'],
-		iframe: ['height', 'name', 'src', 'width'],
+		iframe: ['height', 'name', 'src', 'width', 'allow', 'frameborder'],
 		video: ['autoplay', 'playsinline', 'controls', 'height', 'loop', 'muted', 'poster', 'preload', 'src', 'width'],
 		audio: ['autoplay', 'controls', 'loop', 'muted', 'preload', 'src'],
 		source: ['type', 'src', 'srcset', 'sizes', 'media', 'height', 'width'],
@@ -52,7 +53,7 @@ module.exports = function (Posts) {
 			return postData;
 		}
 		postData.content = String(postData.content || '');
-		const cache = require('./cache');
+		const cache = postCache.getOrCreate();
 		const pid = String(postData.pid);
 		const cachedContent = cache.get(pid);
 		if (postData.pid && cachedContent !== undefined) {

@@ -363,7 +363,10 @@ Messaging.canMessageUser = async (uid, toUid) => {
 		user.blocks.is(uid, toUid),
 	]);
 
-	if (isBlocked || (settings.restrictChat && !isAdmin && !isModerator && !isFollowing)) {
+	if (isBlocked) {
+		throw new Error('[[error:chat-user-blocked]]');
+	}
+	if (settings.restrictChat && !isAdmin && !isModerator && !isFollowing) {
 		throw new Error('[[error:chat-restricted]]');
 	}
 
@@ -417,7 +420,8 @@ async function checkReputation(uid) {
 }
 
 Messaging.hasPrivateChat = async (uid, withUid) => {
-	if (parseInt(uid, 10) === parseInt(withUid, 10)) {
+	if (parseInt(uid, 10) === parseInt(withUid, 10) ||
+		parseInt(uid, 10) <= 0 || parseInt(withUid, 10) <= 0) {
 		return 0;
 	}
 

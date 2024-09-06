@@ -31,15 +31,17 @@ topicsController.get = async function getTopic(req, res, next) {
 		return next();
 	}
 	let postIndex = parseInt(req.params.post_index, 10) || 1;
+	const topicData = await topics.getTopicData(tid);
+	if (!topicData) {
+		return next();
+	}
 	const [
 		userPrivileges,
 		settings,
-		topicData,
 		rssToken,
 	] = await Promise.all([
 		privileges.topics.get(tid, req.uid),
 		user.getSettings(req.uid),
-		topics.getTopicData(tid),
 		user.auth.getFeedToken(req.uid),
 	]);
 
@@ -47,7 +49,6 @@ topicsController.get = async function getTopic(req, res, next) {
 	const pageCount = Math.max(1, Math.ceil((topicData && topicData.postcount) / settings.postsPerPage));
 	const invalidPagination = (settings.usePagination && (currentPage < 1 || currentPage > pageCount));
 	if (
-		!topicData ||
 		userPrivileges.disabled ||
 		invalidPagination ||
 		(topicData.scheduled && !userPrivileges.view_scheduled)
@@ -96,6 +97,8 @@ topicsController.get = async function getTopic(req, res, next) {
 	topicData.topicStaleDays = meta.config.topicStaleDays;
 	topicData['reputation:disabled'] = meta.config['reputation:disabled'];
 	topicData['downvote:disabled'] = meta.config['downvote:disabled'];
+	topicData.upvoteVisibility = meta.config.upvoteVisibility;
+	topicData.downvoteVisibility = meta.config.downvoteVisibility;
 	topicData['feeds:disableRSS'] = meta.config['feeds:disableRSS'] || 0;
 	topicData['signatures:hideDuplicates'] = meta.config['signatures:hideDuplicates'];
 	topicData.bookmarkThreshold = meta.config.bookmarkThreshold;
@@ -379,16 +382,14 @@ topicsController.pagination = async function (req, res, next) {
 	if (!utils.isNumber(tid)) {
 		return next();
 	}
-
-	const [userPrivileges, settings, topic] = await Promise.all([
-		privileges.topics.get(tid, req.uid),
-		user.getSettings(req.uid),
-		topics.getTopicData(tid),
-	]);
-
+	const topic = await topics.getTopicData(tid);
 	if (!topic) {
 		return next();
 	}
+	const [userPrivileges, settings] = await Promise.all([
+		privileges.topics.get(tid, req.uid),
+		user.getSettings(req.uid),
+	]);
 
 	if (!userPrivileges.read || !privileges.topics.canViewDeletedScheduled(topic, userPrivileges)) {
 		return helpers.notAllowed(req, res);
