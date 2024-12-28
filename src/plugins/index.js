@@ -155,6 +155,7 @@ Plugins.get = async function (id) {
 	const url = `${nconf.get('registry') || 'https://packages.nodebb.org'}/api/v1/plugins/${id}`;
 	const { response, body } = await request.get(url);
 	if (!response.ok) {
+		console.log(response);
 		throw new Error(`[[error:unable-to-load-plugin, ${id}]]`);
 	}
 	let normalised = await Plugins.normalise([body ? body.payload : {}]);
@@ -171,6 +172,7 @@ Plugins.list = async function (matching) {
 	try {
 		const { response, body } = await request.get(url);
 		if (!response.ok) {
+			console.log(response);
 			throw new Error(`[[error:unable-to-load-plugins-from-nbbpm]]`);
 		}
 		return await Plugins.normalise(body);
@@ -184,6 +186,7 @@ Plugins.listTrending = async () => {
 	const url = `${nconf.get('registry') || 'https://packages.nodebb.org'}/api/v1/analytics/top/week`;
 	const { response, body } = await request.get(url);
 	if (!response.ok) {
+		console.log(response);
 		throw new Error(`[[error:unable-to-load-trending-plugins]]`);
 	}
 	return body;
@@ -232,7 +235,12 @@ Plugins.normalise = async function (apiReturn) {
 		} else {
 			pluginMap[plugin.id].latest = pluginMap[plugin.id].latest || plugin.version;
 		}
-		pluginMap[plugin.id].outdated = semver.gt(pluginMap[plugin.id].latest, pluginMap[plugin.id].version);
+		try {
+			pluginMap[plugin.id].outdated = semver.gt(pluginMap[plugin.id].latest, pluginMap[plugin.id].version);
+		} catch (err) {
+			winston.error(`plugin ID=${plugin.id}, latest=${pluginMap[plugin.id].latest}, version=${pluginMap[plugin.id].version},\n${err.stack}`);
+			throw err;
+		}
 	});
 
 	if (nconf.get('plugins:active')) {

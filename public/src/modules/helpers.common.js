@@ -32,6 +32,7 @@ module.exports = function (utils, Benchpress, relative_path) {
 		shouldHideReplyContainer,
 		humanReadableNumber,
 		formattedNumber,
+		txEscape,
 		generatePlaceholderWave,
 		register,
 		__escape: identity,
@@ -299,7 +300,7 @@ module.exports = function (utils, Benchpress, relative_path) {
 		}
 		classNames = classNames || '';
 		const attributes = new Map([
-			['title', userObj.username],
+			['title', userObj.displayname],
 			['data-uid', userObj.uid],
 			['class', `avatar ${classNames}${rounded ? ' avatar-rounded' : ''}`],
 		]);
@@ -364,6 +365,10 @@ module.exports = function (utils, Benchpress, relative_path) {
 
 	function formattedNumber(number) {
 		return utils.addCommas(number);
+	}
+
+	function txEscape(text) {
+		return String(text).replace(/%/g, '&#37;').replace(/,/g, '&#44;');
 	}
 
 	function generatePlaceholderWave(items) {
